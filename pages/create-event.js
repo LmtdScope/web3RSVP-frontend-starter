@@ -1,19 +1,16 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import getRandomImage from "../utils/getRandomImage";
 import { ethers } from "ethers";
-import connectContract from "../utils/connectContract";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import Alert from "../components/Alert";
+import connectContract from "../utils/connectContract";
+import getRandomImage from "../utils/getRandomImage";
 
 export default function CreateEvent() {
   const { data: account } = useAccount();
-  const [success, setSuccess] = useState(null);
-const [message, setMessage] = useState(null);
-const [loading, setLoading] = useState(null);
-const [eventID, setEventID] = useState(null);
+
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
@@ -22,15 +19,21 @@ const [eventID, setEventID] = useState(null);
   const [eventLink, setEventLink] = useState("");
   const [eventDescription, setEventDescription] = useState("");
 
+  const [success, setSuccess] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(null);
+  const [eventID, setEventID] = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
+
     const body = {
       name: eventName,
       description: eventDescription,
       link: eventLink,
       image: getRandomImage(),
     };
+
     try {
       const response = await fetch("/api/store-event-data", {
         method: "POST",
@@ -52,18 +55,18 @@ const [eventID, setEventID] = useState(null);
     }
   }
 
-  await contract.methodName(parameters, { optionName: optionValue });
-
   const createEvent = async (cid) => {
+    console.log("CID", cid)
     try {
       const rsvpContract = connectContract();
-  
+
       if (rsvpContract) {
+        console.log("CONTRACT CONNECTED")
         let deposit = ethers.utils.parseEther(refund);
         let eventDateAndTime = new Date(`${eventDate} ${eventTime}`);
         let eventTimestamp = eventDateAndTime.getTime();
         let eventDataCID = cid;
-  
+        console.log("here", account)
         const txn = await rsvpContract.createNewEvent(
           eventTimestamp,
           deposit,
@@ -71,13 +74,13 @@ const [eventID, setEventID] = useState(null);
           eventDataCID,
           { gasLimit: 900000 }
         );
+
         setLoading(true);
         console.log("Minting...", txn.hash);
         let wait = await txn.wait();
         console.log("Minted -- ", txn.hash);
-  
+
         setEventID(wait.events[0].args[0]);
-  
         setSuccess(true);
         setLoading(false);
         setMessage("Your event has been created successfully.");
@@ -91,9 +94,6 @@ const [eventID, setEventID] = useState(null);
       console.log(error);
     }
   };
-  
-
-  
 
   useEffect(() => {
     // disable scroll on <input> elements of type number
@@ -114,51 +114,36 @@ const [eventID, setEventID] = useState(null);
         />
       </Head>
       <section className="relative py-12">
-      { loading && (
-    <Alert
-      alertType={"loading"}
-      alertBody={"Please wait"}
-      triggerAlert={true}
-      color={"white"}
-    />
-  )
-}
-{
-  success && (
-    <Alert
-      alertType={"success"}
-      alertBody={message}
-      triggerAlert={true}
-      color={"palegreen"}
-    />
-  )
-}
-{
-  success === false && (
-    <Alert
-      alertType={"failed"}
-      alertBody={message}
-      triggerAlert={true}
-      color={"palevioletred"}
-    />
-  )
-}
-{
-  !success && (
-    <h1 className="text-3xl tracking-tight font-extrabold text-gray-900 sm:text-4xl md:text-5xl mb-4">
-      Create your virtual event
-    </h1>
-  )
-}
-{
-  account && !success && <form>...</form>
-}
-    
+        {loading && (
+          <Alert
+            alertType={"loading"}
+            alertBody={"Please wait"}
+            triggerAlert={true}
+            color={"white"}
+          />
+        )}
+        {success && (
+          <Alert
+            alertType={"success"}
+            alertBody={message}
+            triggerAlert={true}
+            color={"palegreen"}
+          />
+        )}
+        {success === false && (
+          <Alert
+            alertType={"failed"}
+            alertBody={message}
+            triggerAlert={true}
+            color={"palevioletred"}
+          />
+        )}
+        {!success && (
           <h1 className="text-3xl tracking-tight font-extrabold text-gray-900 sm:text-4xl md:text-5xl mb-4">
             Create your virtual event
           </h1>
-        
-     
+        )}
+        {account && !success && (
           <form
             onSubmit={handleSubmit}
             className="space-y-8 divide-y divide-gray-200"
@@ -331,26 +316,21 @@ const [eventID, setEventID] = useState(null);
               </div>
             </div>
           </form>
-        
-
-          { !account && (
-    <section className="flex flex-col items-start py-8">
-      <p className="mb-4">Please connect your wallet to create events.</p>
-      <ConnectButton />
-    </section>
-  )
-}
-{
-  success && eventID && (
-    <div>
-      Success! Please wait a few minutes, then check out your event page{" "}
-      <span className="font-bold">
-        <Link href={`/event/${eventID}`}>here</Link>
-      </span>
-    </div>
-  )
-}
-
+        )}
+        {success && eventID && (
+          <div>
+            Success! Please wait a few minutes, then check out your event page{" "}
+            <span className="font-bold">
+              <Link href={`/event/${eventID}`}>here</Link>
+            </span>
+          </div>
+        )}
+        {!account && (
+          <section className="flex flex-col items-start py-8">
+            <p className="mb-4">Please connect your wallet to create events.</p>
+            <ConnectButton />
+          </section>
+        )}
       </section>
     </div>
   );
